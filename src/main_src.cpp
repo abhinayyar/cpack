@@ -12,36 +12,19 @@ using namespace std;
 
 #define  CODE_TABLE_LEN 6
 
-class dummy
-{
-	public:
-	int val;
-	dummy()
-	{
-		val=4;
-	}
-	void fun()
-	{
-		cout<<"Hello we have made call\n";
-	}
-};
-
 int main()
 {
 
-	unordered_map<string,code_table_glb> pattern_finder;
-	vector<code_table_glb> table_ob;
+	unordered_map<string,code_table_glb*> pattern_finder;
 	vector<string> input_to_process;
 	vector<string> output_to_get;
+	vector<string> decoded_output;
 	vector<pair<string,string> > word_dict_glb;
 
 
 
 	/* func to put values to code table */
-	table_ob=initialize();	
-
-	/* initialize pattern fnder to reduce cost of search */
-	init_pattern_finder(pattern_finder,table_ob);
+	pattern_finder=initialize();	
 
 	/* get inuput data */
 	input_to_process=get_file_input();
@@ -50,43 +33,37 @@ int main()
 	
 	output_to_get=input_processor(input_to_process,pattern_finder,word_dict_glb);
 
-	/* display results */	
-//	code_table_glb ob = pattern_finder["xxxx"];
-//	cout<<table_ob[0].code<<"\t"<<table_ob[1].code<<"\t"<<table_ob[5].code<<"\n";
-//	if(pattern_finder.find("xxxx")!=pattern_finder.end())
-//	cout<<"True\n";
+	/* display results */
 
-	unordered_map<string,dummy*> test;
+	display_results(input_to_process,output_to_get);
+
+	/* decode */
+	decoded_output=decode_string(output_to_get);
 	
-	dummy g;
+	return 0;	
 	
-	test.insert(make_pair("xx",&g));
-	test["xx"]->fun();
-	cout<<test["xx"]->val<<"\n";
-//	test["xx"]=&g;
-	
-		
 }
 
-/*
-* function to initialize pattern finder 
+/* function to display results
 */
-void init_pattern_finder(unordered_map<string,code_table_glb>& pattern_finder,vector<code_table_glb> table_op)
+void display_results(vector<string> input,vector<string> output)
 {
-	pattern_finder.insert(make_pair("zzzz",table_op[0]));
-	pattern_finder.insert(make_pair("xxxx",table_op[1]));
-	pattern_finder.insert(make_pair("mmmm",table_op[2]));
-	pattern_finder.insert(make_pair("mmxx",table_op[3]));
-	pattern_finder.insert(make_pair("zzzx",table_op[4]));
-	pattern_finder.insert(make_pair("mmmx",table_op[5]));		
+	
+	cout<<"=======================================\n";
+	cout<<" ---------- RESULTS --------------------\n";
+	cout<<"=======================================\n";
+	for(int i=0;i<output.size();i++)
+	{
+		cout<<input[i]<<"\t"<<"---->"<<"\t"<<output[i]<<"\n";
+	}
 }
 /*
 * function to initialize code table
 */
-vector<code_table_glb> initialize(void)
+unordered_map<string,code_table_glb*> initialize()
 {
-	vector<code_table_glb> table_ob;
-
+	
+	unordered_map<string,code_table_glb*> pattern_finder;
 	string code;
 	string pattern;
 	int length=0;
@@ -107,11 +84,9 @@ vector<code_table_glb> initialize(void)
 	frequency=39.7;
 
 	
-	code_table_glb ob1(code,pattern,length,frequency);	
+	code_table_glb *ob1 = new code_table_glb(code,pattern,length,frequency);	
 
-
-	table_ob.push_back(ob1);
-
+	pattern_finder.insert(make_pair(pattern,ob1));
 
 	/* init 2 */
 
@@ -128,10 +103,11 @@ vector<code_table_glb> initialize(void)
 	
 	frequency=32.1;
 
-	code_table_glb ob2(code,pattern,length,frequency);
+	code_table_glb *ob2= new code_table_glb(code,pattern,length,frequency);
 
 	
-	table_ob.push_back(ob2);
+	pattern_finder.insert(make_pair(pattern,ob2));
+	
 	
 	/* init 3 */
 	
@@ -147,10 +123,11 @@ vector<code_table_glb> initialize(void)
 	
 	frequency=7.6;
 
-	code_table_glb ob3(code,pattern,length,frequency);
-
+	code_table_glb *ob3= new code_table_glb(code,pattern,length,frequency);
 	
-	table_ob.push_back(ob3);
+	pattern_finder.insert(make_pair(pattern,ob3));
+	
+	
 	
 	/* init 4 */
 	
@@ -165,10 +142,10 @@ vector<code_table_glb> initialize(void)
 	
 	frequency=6.1;
 
-	code_table_glb ob4(code,pattern,length,frequency);
+	code_table_glb *ob4= new code_table_glb(code,pattern,length,frequency);
 
 	
-	table_ob.push_back(ob4);
+	pattern_finder.insert(make_pair(pattern,ob4));
 	
 	/* init 5 */
 	
@@ -183,10 +160,10 @@ vector<code_table_glb> initialize(void)
 	
 	frequency=7.3;
 
-	code_table_glb ob5(code,pattern,length,frequency);
+	code_table_glb *ob5= new code_table_glb(code,pattern,length,frequency);
 
-	
-	table_ob.push_back(ob5);
+		
+	pattern_finder.insert(make_pair(pattern,ob5));
 	
 	/* init 6 */
 	
@@ -201,10 +178,11 @@ vector<code_table_glb> initialize(void)
 	
 	frequency=7.2;
 
-	code_table_glb ob6(code,pattern,length,frequency);
+	code_table_glb *ob6= new code_table_glb(code,pattern,length,frequency);
 
 	
-	table_ob.push_back(ob6);
+	pattern_finder.insert(make_pair(pattern,ob6));
+	
+	return pattern_finder;
 
-	return table_ob;
 }
