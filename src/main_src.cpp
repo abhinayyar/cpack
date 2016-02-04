@@ -7,7 +7,6 @@
 #include "main_src.h"
 #include "parser/file_reader.h"
 #include "processor/data_process.h"
-
 using namespace std;
 
 #define  CODE_TABLE_LEN 6
@@ -16,6 +15,7 @@ int main()
 {
 
 	unordered_map<string,code_table_glb*> pattern_finder;
+	unordered_map<string,code_table_glb*> code_finder;
 	vector<string> input_to_process;
 	vector<string> output_to_get;
 	vector<string> decoded_output;
@@ -24,7 +24,7 @@ int main()
 
 
 	/* func to put values to code table */
-	pattern_finder=initialize();	
+	pattern_finder=initialize(code_finder);	
 
 	/* get inuput data */
 	input_to_process=get_file_input();
@@ -33,15 +33,57 @@ int main()
 	
 	output_to_get=input_processor(input_to_process,pattern_finder,word_dict_glb);
 
-	/* display results */
+	/* display encode results */
 
 	display_results(input_to_process,output_to_get);
 
 	/* decode */
-	decoded_output=decode_string(output_to_get);
+	decoded_output=decode_string(output_to_get,code_finder,word_dict_glb);
+
+	/* display decode results */
+
+	cout<<"\n";
+	cout<<"\n";
 	
+	display_results(output_to_get,decoded_output);
+
+	/* compare results */
+
+	compare_results(input_to_process,decoded_output,output_to_get);		
 	return 0;	
 	
+}
+
+/* function to compare results */
+
+void compare_results(vector<string> input,vector<string> output,vector<string> compressed)
+{
+	
+	cout<<"\n";
+	cout<<"\n";
+	
+	
+	
+	cout<<"=======================================\n";
+	cout<<" ------- COMPARE RESULTS --------------\n";
+	cout<<"=======================================\n";
+
+	cout<<"\n";
+	cout<<"\n";
+	
+	
+	cout<<"INPUT"<<"\t"<<"\t"<<"COMPRESSED"<<"\t"<<"\t"<<"OUTPUT"<<"\t"<<"\t"<<"MATCH"<<"\n";
+	cout<<"________________________________________________________________\n";
+	cout<<"________________________________________________________________\n";
+
+	for(int i=0;i<input.size();i++)
+	{
+		if(input[i].compare(output[i])==0)
+		cout<<input[i]<<"\t"<<"\t"<<compressed[i]<<"\t"<<"\t"<<output[i]<<"\t"<<"Y"<<"\n";
+		else
+		cout<<input[i]<<"\t"<<"\t"<<compressed[i]<<"\t"<<"\t"<<output[i]<<"\t"<<"\t"<<"Unmatch"<<"\n";
+		cout<<"______________________________________________________________\n";
+	}
 }
 
 /* function to display results
@@ -60,7 +102,7 @@ void display_results(vector<string> input,vector<string> output)
 /*
 * function to initialize code table
 */
-unordered_map<string,code_table_glb*> initialize()
+unordered_map<string,code_table_glb*> initialize(unordered_map<string,code_table_glb*>& code_finder)
 {
 	
 	unordered_map<string,code_table_glb*> pattern_finder;
@@ -87,6 +129,7 @@ unordered_map<string,code_table_glb*> initialize()
 	code_table_glb *ob1 = new code_table_glb(code,pattern,length,frequency);	
 
 	pattern_finder.insert(make_pair(pattern,ob1));
+	code_finder.insert(make_pair(code,ob1));
 
 	/* init 2 */
 
@@ -107,6 +150,7 @@ unordered_map<string,code_table_glb*> initialize()
 
 	
 	pattern_finder.insert(make_pair(pattern,ob2));
+	code_finder.insert(make_pair(code,ob2));
 	
 	
 	/* init 3 */
@@ -126,6 +170,7 @@ unordered_map<string,code_table_glb*> initialize()
 	code_table_glb *ob3= new code_table_glb(code,pattern,length,frequency);
 	
 	pattern_finder.insert(make_pair(pattern,ob3));
+	code_finder.insert(make_pair(code,ob3));
 	
 	
 	
@@ -146,6 +191,7 @@ unordered_map<string,code_table_glb*> initialize()
 
 	
 	pattern_finder.insert(make_pair(pattern,ob4));
+	code_finder.insert(make_pair(code,ob4));
 	
 	/* init 5 */
 	
@@ -164,6 +210,7 @@ unordered_map<string,code_table_glb*> initialize()
 
 		
 	pattern_finder.insert(make_pair(pattern,ob5));
+	code_finder.insert(make_pair(code,ob5));
 	
 	/* init 6 */
 	
@@ -182,6 +229,7 @@ unordered_map<string,code_table_glb*> initialize()
 
 	
 	pattern_finder.insert(make_pair(pattern,ob6));
+	code_finder.insert(make_pair(code,ob6));
 	
 	return pattern_finder;
 
