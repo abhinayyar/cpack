@@ -6,6 +6,8 @@
 #include<cstring>
 #include<utility>
 #include<cmath>
+#include<algorithm>
+#include<unordered_set>
 
 #include "../dict/code_table.h"
 #include "../processor/data_process.h"
@@ -16,15 +18,17 @@ using namespace std;
 #define PATTERN_SIZE 4
 #define MAX_DICT_SIZE 32
 
-vector<string> input_processor(vector<string> input_to_process,unordered_map<string,code_table_glb*> pattern_finder,vector<pair<string,string> >& word_dict_glb)
+unordered_set<string> word_dict_lcl;
+
+vector<string> input_processor(vector<string> input_to_process,unordered_map<string,code_table_glb*> pattern_finder,vector<pair<string,string> >& word_dict_glb,float& flit_count)
 {
 	vector<string> output_to_get;
 
 	
 	for(string cur_str : input_to_process)
 	{
-		cout<<"=============================\n";
-		cout<<cur_str<<"\n";
+	//	cout<<"=============================\n";
+	//	cout<<cur_str<<"\n";
 		string unmatched,output_string,processed_string;
 		string index_of_dict;
 		/* process_string_partial will convert input string to only zzzx || zzzz format
@@ -36,9 +40,20 @@ vector<string> input_processor(vector<string> input_to_process,unordered_map<str
 			/* patter found in code table , need not to look for dict
 			*  code + unmatched_part  
 			*/
-			cout<<"Type  : (zzzz or zzzx) "<<"\t"<<cur_str<<"\t"<<"Actual: \t"<<processed_string<<"\n";
+	//		cout<<"Type  : (zzzz or zzzx) "<<"\t"<<cur_str<<"\t"<<"Actual: \t"<<processed_string<<"\n";
 			if(pattern_finder.find(processed_string)!=pattern_finder.end()) 
-			output_string=pattern_finder[processed_string]->code+unmatched;			 
+			output_string=pattern_finder[processed_string]->code+unmatched;
+
+
+			// update the flit count
+			if(unmatched.empty()==false)
+			{
+				flit_count+=1.5;
+			}
+			else
+			{
+				flit_count+=0.25;
+			}			 
 		}
 		else
 		{
@@ -50,7 +65,28 @@ vector<string> input_processor(vector<string> input_to_process,unordered_map<str
 				
 				if(pattern_finder.find(processed_string)!=pattern_finder.end()) 
 				output_string=pattern_finder[processed_string]->code + index_of_dict + unmatched;
-				cout<<"True section \n";	
+	//			cout<<"True section \n";
+
+
+				// update flit cont
+				if(unmatched.size()==2)
+				{
+					// mmmx
+					flit_count+=(0.5+(log2(MAX_DICT_SIZE)/8)+1);
+				}
+				else if(unmatched.size()==4)
+				{
+					// mmxx
+					
+					flit_count+=(0.5+(log2(MAX_DICT_SIZE)/8)+2);
+				}
+				else
+				{
+					// mmmm
+					
+					flit_count+=(0.25+(log2(MAX_DICT_SIZE)/8));
+				}	
+				
 			}	
 			else
 			{
@@ -58,20 +94,17 @@ vector<string> input_processor(vector<string> input_to_process,unordered_map<str
 				if(pattern_finder.find(processed_string)!=pattern_finder.end()) 
 				output_string=pattern_finder[processed_string]->code + unmatched;
 				/* update the same in dict */
-				int index=word_dict_glb.size();
-				/* TODO : lock implementation for multi word insert */
-				if(index==MAX_DICT_SIZE)
-				{
-					word_dict_glb.erase(word_dict_glb.begin());
-				}
-				word_dict_glb.push_back(make_pair(cur_str,get_binary(index)));
-				cout<<"False section\n"; 
+				if(word_dict_lcl.find(cur_str)==word_dict_lcl.end())
+				word_dict_lcl.insert(cur_str);
+	//			cout<<"False section\n";
+
+				// update flit count
+				flit_count+=4.25; 
 			}
 		}
 		output_to_get.push_back(output_string);
 	}
 		
-
 	return output_to_get;	
 }
 /* function to convert index to binary */
@@ -86,8 +119,8 @@ string get_binary(int index)
 		index=index/2;
 		max_size--;
 	}
-	cout<<"---------------------------\n";
-	cout<<a<<"\t"<<output<<"\n";
+//	cout<<"---------------------------\n";
+//	cout<<a<<"\t"<<output<<"\n";
 	return output;
 }
 /* function to return string in code pattern format
@@ -126,7 +159,7 @@ bool dict_compare(string cur_str,string& index_of_dict,string& processed_str,vec
 		string local_unmatched,local_processed_str;
 		
 		string dict_str=word_dict_glb[i].first;
-		cout<<"Dict "<<word_dict_glb[i].first<<"\t";
+//		cout<<"Dict "<<word_dict_glb[i].first<<"\t";
 		val=compare_str(dict_str,cur_str,local_unmatched,local_processed_str);
 		if(val>max_val)
 		{
@@ -135,7 +168,7 @@ bool dict_compare(string cur_str,string& index_of_dict,string& processed_str,vec
 			unmatched.assign(local_unmatched);
 			index_of_dict.assign(word_dict_glb[i].second);
 			processed_str.assign(local_processed_str);
-			cout<<"Actual one "<<cur_str<<"\t"<<processed_str<<"\t"<<unmatched<<"\n";
+//			cout<<"Actual one "<<cur_str<<"\t"<<processed_str<<"\t"<<unmatched<<"\n";
 		}			
 	}
 	
@@ -143,7 +176,7 @@ bool dict_compare(string cur_str,string& index_of_dict,string& processed_str,vec
 
 	if(max_val==0 || max_val==1)
 	{
-		cout<<"val erro \n";
+//		cout<<"val erro \n";
 		processed_str.assign("xxxx");
 		unmatched.assign(cur_str);
 		return false;
@@ -151,7 +184,7 @@ bool dict_compare(string cur_str,string& index_of_dict,string& processed_str,vec
 	
 	if(pattern_finder.find(processed_str)==pattern_finder.end())
 	{
-		cout<<"pattern errroi "<<processed_str<<"\n";
+//		cout<<"pattern errroi "<<processed_str<<"\n";
 		 return false;	
 	}
 	else				
@@ -165,7 +198,7 @@ int compare_str(string dict_str,string cur_str,string& local_unmatched,string& l
 {
 	int match_count=0;
 
-	cout<<"\n"<<"com "<<dict_str<<"\t"<<cur_str<<"\n";	
+//	cout<<"\n"<<"com "<<dict_str<<"\t"<<cur_str<<"\n";	
 	bool is_first_unmatch=true;
 	for(int i=0;i<=dict_str.size()-BIT_WORD;i+=BIT_WORD)
 	{
@@ -190,10 +223,30 @@ int compare_str(string dict_str,string cur_str,string& local_unmatched,string& l
 		local_processed_str+="x";		
 	}
 
-	cout<<"\n M :"<<match_count<<"\n";	
+//	cout<<"\n M :"<<match_count<<"\n";	
 	return match_count;		
 }
-vector<string> decode_string(vector<string> input_string,unordered_map<string,code_table_glb*>& code_finder,vector<pair<string,string> > word_dict_glb)
+void update_dict(vector<pair<string,string> >& word_dict_glb)
+{
+	string insert_index;
+	for(string p : word_dict_lcl)
+	{
+		int index=word_dict_glb.size();
+		if(index==MAX_DICT_SIZE)
+		{
+			//cout<<"Max reached \n";
+			string index_s = word_dict_glb.front().second;
+			word_dict_glb.erase(word_dict_glb.begin());
+			word_dict_glb.push_back(make_pair(p,index_s));
+		}
+		else
+		{
+			// NORMAL CASE	
+			word_dict_glb.push_back(make_pair(p,get_binary(index)));
+		}
+	}	
+}
+vector<string> decode_string(vector<string> input_string,unordered_map<string,code_table_glb*>& code_finder,vector<pair<string,string> >& word_dict_glb)
 {
 	vector<string> output_string;
 	for(string cur_str : input_string)
@@ -202,6 +255,10 @@ vector<string> decode_string(vector<string> input_string,unordered_map<string,co
 		output=decompress_val(cur_str,code_finder,word_dict_glb);
 		output_string.push_back(output);
 	}
+
+	/* update global dict with local dict */
+	update_dict(word_dict_glb);
+	word_dict_lcl.clear();
 	return output_string;
 }
 /* functio to search word in dict */
@@ -213,7 +270,7 @@ string search_dict(string dict_index,vector<pair<string,string> > word_dict_glb)
 		if(dict_index.compare(p.second)==0) return p.first;
 	}
 
-	cout<<" Debug  : Not correctly decoded 3\n";
+//	cout<<" Debug  : Not correctly decoded 3\n";
 	return " ";
 }
 /* function to decode each */
@@ -257,7 +314,7 @@ string process_string_pattern(string pattern_str,string cur_str,int index,vector
 	}
 	else
 	{
-		cout<<"Debug : Not correctly decoded 2\n";
+//		cout<<"Debug : Not correctly decoded 2\n";
 		return " ";	
 	}
 			
@@ -292,7 +349,7 @@ string decompress_val(string cur_str,unordered_map<string,code_table_glb*> code_
 		
 	}
 	
-	cout<<"Debug : Wrong output \n";
+//	cout<<"Debug : Wrong output \n";
 	return " ";	
 
 }

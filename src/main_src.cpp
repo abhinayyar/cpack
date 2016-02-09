@@ -7,13 +7,21 @@
 #include "main_src.h"
 #include "parser/file_reader.h"
 #include "processor/data_process.h"
+#include <fstream>
 using namespace std;
 
 #define  CODE_TABLE_LEN 6
+#define FLIT_SIZE 32
 
-int main()
+int main(int argc,char *argv[])
 {
 
+
+	if(argc <=1)
+	{
+		cout<<"Please enter data trace file \n";
+		return 0;
+	}
 	unordered_map<string,code_table_glb*> pattern_finder;
 	unordered_map<string,code_table_glb*> code_finder;
 	vector<string> input_to_process;
@@ -26,32 +34,98 @@ int main()
 	/* func to put values to code table */
 	pattern_finder=initialize(code_finder);	
 
-	/* get inuput data */
-	input_to_process=get_file_input();
+	/* open file */
 
-	/* input processor */
+	int file_size=open_file(argv[1]);
+
+	int net_input=0,net_output=0;
+	float net_input_flit=0,net_output_flit=0;
+
+
+	/* write ouput */
+	ofstream my_file("output_flit.txt");
+
+	for(int i=0;i<file_size;i++)
+	{
+		int input_count=0,output_count=0;
+		float flit_count=0;
+		cout<<"INPUT PROCESS NUMBER : "<<"\t"<<i+1<<"\n";
+		int data_size=0;
+		/* get inuput data */
+		input_to_process=get_file_input(i,data_size);
+
+		/* input processor */
 	
-	output_to_get=input_processor(input_to_process,pattern_finder,word_dict_glb);
+		output_to_get=input_processor(input_to_process,pattern_finder,word_dict_glb,flit_count);
 
-	/* display encode results */
+		/* display encode results */
 
-	display_results(input_to_process,output_to_get);
+		display_results(input_to_process,output_to_get,input_count,output_count);
 
-	/* decode */
-	decoded_output=decode_string(output_to_get,code_finder,word_dict_glb);
 
-	/* display decode results */
+		//print_dict(word_dict_glb);
 
+		/* decode */
+		decoded_output=decode_string(output_to_get,code_finder,word_dict_glb);
+
+		/* display decode results */
+
+		cout<<"\n";
+		cout<<"\n";
+		input_count=0;
+		output_count=0;	
+		display_results(output_to_get,decoded_output,input_count,output_count);
+
+		/* compare results */
+
+		compare_results(input_to_process,decoded_output,output_to_get);
+
+		/* compression count */
+
+		cout<<"______________________________________________\n";
+		cout<<"---------- RATIO ------------------------------\n";
+		cout<<"_______________________________________________\n";
+	
+		cout<<"Actual Input size : \t"<<data_size<<"\t"<<"Actual output size : \t"<<flit_count<<"\n";
+		cout<<" Fits Input : \t"<<data_size/FLIT_SIZE<<"\t"<<"Flit output : \t"<<flit_count/FLIT_SIZE<<"\n";	
+		my_file<<" Fits Input : \t"<<data_size/FLIT_SIZE<<"\t"<<"Flit output : \t"<<flit_count/FLIT_SIZE<<"\n";	
+		//cout<<"Inpt Size : \t"<<output_count<<"\t"<<"Output Size : \t"<<input_count<<"\n";
+
+		net_input+=output_count;
+		net_output+=input_count;
+
+		net_input_flit+=(data_size/FLIT_SIZE);
+		net_output_flit+=(flit_count/FLIT_SIZE);
+	}
+	
+	my_file.close();
+//	systemd("cat output_flit.txt | sort -k 4 > sorted_flit.txt");
 	cout<<"\n";
 	cout<<"\n";
 	
-	display_results(output_to_get,decoded_output);
+	cout<<"======================================================\n";
+	cout<<"--------------- NET COMPRESSION ----------------------\n";
+	cout<<"=======================================================\n";
 
-	/* compare results */
-
-	compare_results(input_to_process,decoded_output,output_to_get);		
+	cout<<"Net Input Flit : \t"<<net_input_flit<<"\t"<<"Net Output Flit: \t"<<net_output_flit<<"\n";
+	
 	return 0;	
 	
+}
+
+/* function to print dict */
+
+void print_dict(vector<pair<string,string> > word_dict_glb)
+{
+	int i=0;
+
+	cout<<"------------ DICT ----------------\n";
+	for(pair<string,string> p : word_dict_glb)
+	{
+		cout<<i+1<<" : \t"<<p.first<<"\t"<<p.second<<"\n";
+		i++;
+	}
+	cout<<"----------------------------------\n";	
 }
 
 /* function to compare results */
@@ -79,24 +153,26 @@ void compare_results(vector<string> input,vector<string> output,vector<string> c
 	for(int i=0;i<input.size();i++)
 	{
 		if(input[i].compare(output[i])==0)
-		cout<<input[i]<<"\t"<<"\t"<<compressed[i]<<"\t"<<"\t"<<output[i]<<"\t"<<"Y"<<"\n";
+		cout<<i+1<<" :\t"<<input[i]<<"\t"<<"\t"<<compressed[i]<<"\t"<<"\t"<<output[i]<<"\t"<<"Y"<<"\n";
 		else
-		cout<<input[i]<<"\t"<<"\t"<<compressed[i]<<"\t"<<"\t"<<output[i]<<"\t"<<"\t"<<"Unmatch"<<"\n";
+		cout<<i+1<<" : \t"<<input[i]<<"\t"<<"\t"<<compressed[i]<<"\t"<<"\t"<<output[i]<<"\t"<<"\t"<<"Unmatch"<<"\n";
 		cout<<"______________________________________________________________\n";
 	}
 }
 
 /* function to display results
 */
-void display_results(vector<string> input,vector<string> output)
+void display_results(vector<string> input,vector<string> output,int& input_count,int& output_count)
 {
 	
-	cout<<"=======================================\n";
-	cout<<" ---------- RESULTS --------------------\n";
-	cout<<"=======================================\n";
+	//cout<<"=======================================\n";
+	//cout<<" ---------- RESULTS --------------------\n";
+	//cout<<"=======================================\n";
 	for(int i=0;i<output.size();i++)
 	{
-		cout<<input[i]<<"\t"<<"---->"<<"\t"<<output[i]<<"\n";
+		input_count+=input[i].size();
+		output_count+=output[i].size();
+		//cout<<input[i]<<"\t"<<"---->"<<"\t"<<output[i]<<"\n";
 	}
 }
 /*
